@@ -79,3 +79,5 @@ AUTHN_REQUEST = (
 #        '</ds:Signature>'
     '</samlp:AuthnRequest>'
 )
+
+#TODO: Create XML template for SLO Assertion.

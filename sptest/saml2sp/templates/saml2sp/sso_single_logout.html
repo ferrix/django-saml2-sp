@@ -6,6 +6,7 @@ You are now logged out of this Service Point.<br />
 You are still logged into your Identity Provider.
 You should logout of your Identity Provider here:<br />
 <form method="POST" action="{{ idp_logout_url }}">
+{#TODO: Add SAML Assertion (and other?) items. #}
 <input type="submit" value="Logout at the Identity Provider">
 </form>
 {% if autosubmit %}

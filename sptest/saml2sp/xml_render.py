@@ -30,3 +30,5 @@ def _get_authnrequest_xml(template, parameters, signed=False):
 
 def get_authnrequest_xml(parameters, signed=False):
     return _get_authnrequest_xml(AUTHN_REQUEST, parameters, signed)
+
+#TODO: Add methods to get SLO Assertion.

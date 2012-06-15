@@ -29,7 +29,7 @@ IDP_CHOICES = (
 )
 class IdpSelectionForm(forms.Form):
     idp = forms.ChoiceField(choices=IDP_CHOICES)
-    
+
 def _get_entity_id(request):
     entity_id = saml2sp_settings.SAML2SP_ENTITY_ID
     if entity_id is None:
@@ -146,6 +146,7 @@ def sso_single_logout(request):
     """
     Replies with an XHTML SSO Request.
     """
+    #TODO: Create valid SLO Assertion and pass it to the template.
     logout(request)
     tv = {
         'idp_logout_url': saml2sp_settings.SAML2SP_IDP_SLO_URL,
