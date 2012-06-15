@@ -5,13 +5,14 @@ You are now logged out of this Service Point.<br />
 {% if idp_logout_url %}
 You are still logged into your Identity Provider.
 You should logout of your Identity Provider here:<br />
-<a href="{{ idp_logout_url }}">{{ idp_logout_url }}</a>
-{#XXX: Maybe this should happen as a redirect, rather than as javascript. #}
+<form method="POST" action="{{ idp_logout_url }}">
+<input type="submit" value="Logout at the Identity Provider">
+</form>
 {% if autosubmit %}
 <script language="javascript">
 <!--
 /* Automatically submit the form. */
-document.location.href = '{{ idp_logout_url }}';
+document.forms[0].submit();
 //-->
 </script>
 {% endif %}
