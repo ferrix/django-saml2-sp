@@ -217,8 +217,9 @@ def sso_single_logout(request):
     logout_req = xml_render.get_logoutrequest_xml(parameters,                                  
                     signed=saml2sp_settings.SAML2SP_SIGNING)
     saml_request = base64.b64encode(logout_req)    
-    logout(request)
+    #logout(request) #TURN OFF WHILE DEBUGGING!
     tv = {
+        'logout_req': logout_req,
         'saml_request': saml_request,
         'idp_logout_url': saml2sp_settings.SAML2SP_IDP_SLO_URL,
         'autosubmit': saml2sp_settings.SAML2SP_IDP_AUTO_LOGOUT,
