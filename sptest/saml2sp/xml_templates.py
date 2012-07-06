@@ -1,5 +1,5 @@
 """
-XML string templates for SAML 2.0 Service Point AuthnRequest.
+XML string templates for SAML 2.0 Service Provider AuthnRequest.
 
 NOTE #1: OK, encoding XML into python is not optimal.
     However, this is the easiest way to get canonical XML...
@@ -50,34 +50,24 @@ AUTHN_REQUEST = (
                 'Version="2.0" '
                 'xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">'
             '<saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${ISSUER}</saml:Issuer>'
-            # I THINK THIS...
             '${AUTHN_REQUEST_SIGNATURE}'
-            # ...REPLACES THIS:
-#            '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
-#                '<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
-#                    '<ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/>'
-#                    '<ds:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/>'
-#                    '<ds:Reference URI="${REFERENCE_URI}" xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
-#                        '<ds:Transforms xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
-#                            '<ds:Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/>'
-#                            '<ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ec:InclusiveNamespaces PrefixList="ds saml samlp" xmlns:ec="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transform>'
-#                        '</ds:Transforms>'
-#                        '<ds:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"/>'
-#                        '<ds:DigestValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">UwnBYwYd4wkS0Ox5/4s5QwQ7RCU=</ds:DigestValue>'
-#                    '</ds:Reference>'
-#                '</ds:SignedInfo>'
-#            '<ds:SignatureValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">'
-#                '${SIGNATURE_VALUE}'
-#            '</ds:SignatureValue>'
-#            '<ds:KeyInfo>'
-#                '<ds:X509Data>'
-#                    '<ds:X509Certificate>'
-#                    '${CERTIFICATE}'
-#                    '</ds:X509Certificate>'
-#                '</ds:X509Data>'
-#            '</ds:KeyInfo>'
-#        '</ds:Signature>'
     '</samlp:AuthnRequest>'
 )
 
-#TODO: Create XML template for SLO Assertion.
+#TODO: Finish XML template for SLO Assertion.
+LOGOUT_REQUEST = (
+    '<?xml version="1.0" encoding="UTF-8"?>'
+        '<samlp:LogoutRequest '
+                'Destination="${DESTINATION}" ' # Optional
+                'ID="${LOGOUT_REQUEST_ID}" '
+                'IssueInstant="${ISSUE_INSTANT}" '
+                'ProtocolBinding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" '
+                'Version="2.0" '
+                'xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">'
+            '<saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">${ISSUER}</saml:Issuer>'
+            '<saml:NameID Format="${SUBJECT_FORMAT}" SPNameQualifier="${SP_NAME_QUALIFIER}">'
+            '${SUBJECT}'
+            '</saml:NameID>'
+            '${LOGOUT_REQUEST_SIGNATURE}'
+    '</samlp:LogoutRequest>'
+)

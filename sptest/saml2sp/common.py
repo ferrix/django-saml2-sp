@@ -1,3 +1,7 @@
+"""
+This module contains stuff that was copied-and-pasted from saml2idp. 
+"""
+#NOTE: See also codex.py for more shared stuff.
 #XXX: Use svn:externals to get the same version as in saml2idp???
 #TODO: Factor these two methods out into a common shared library? YAGNI?
 # Python imports

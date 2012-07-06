@@ -1,3 +1,14 @@
+"""
+Views for the saml2sp app.
+
+COMMENTARY:
+- in this, we use random IDs. Instead, we probably should use IDs that are saved
+    somewhere, so that we can refer to SAML messages after they are generated.
+- the settings are not pretty and should migrate towards metadata, like in the
+    saml2idp project.
+- this project probably needs to employ the idea of "Processor" classes, like in
+    the saml2idp project.
+"""
 # Python imports
 import base64
 from xml.dom.minidom import parseString
@@ -8,18 +19,20 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.urlresolvers import reverse
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 from django.template import RequestContext
 from django.views.decorators.csrf import csrf_view_exempt
+# Other imports
+from BeautifulSoup import BeautifulStoneSoup
 # Local imports
-import base
 import codex
+import common
 import saml2sp_settings
 import xml_render
 import xml_signing
 
 def xml_response(request, template, tv):
-    return render_to_response(template, tv, mimetype="application/xml")
+    return render(request, template, tv, mimetype="application/xml")
 
 
 #TODO: Pull IDP choices from a model. For now, just use the one from the settings.
@@ -37,16 +50,55 @@ def _get_entity_id(request):
     return entity_id
 
 def _get_email_from_assertion(assertion):
-    """ Returns the email out of the assertion. """
-    #TODO: Wrangle with XML. Ugh.
-    return "dummy@dummy.com"
+    """
+    Returns the email out of the assertion.
+
+    At present, Assertion must pass the email address as the Subject, eg.:
+
+    <saml:Subject>
+            <saml:NameID Format="urn:oasis:names:tc:SAML:2.0:nameid-format:email"
+                         SPNameQualifier=""
+                         >email@example.com</saml:NameID>
+    """
+    soup = BeautifulStoneSoup(assertion)
+    subject = soup.findAll('saml:subject')[0]
+    name_id = subject.findAll('saml:nameid')[0]
+    email = name_id.string
+    return email
 
 def _email_to_username(email):
     """
     Returns a Django-safe username based on the email address.
     This is because Django doesn't support email addresses as usernames yet.
+
     """
     return email.replace('@', 'AT')
+
+def _get_attributes_from_assertion(assertion):
+    """
+    Returns the SAML Attributes (if any) that are present in the assertion.
+
+    NOTE: Technically, attribute values could be any XML structure.
+          But for now, just assume a single string value.
+    """
+    attributes = {}
+    soup = BeautifulStoneSoup(assertion)
+    attrs = soup.findAll('saml:attribute')
+    for attr in attrs:
+        name = attr['name']
+        values = attr.findAll('saml:attributevalue')
+        if len(values) == 0:
+            # Ignore empty-valued attributes. (I think these are not allowed.)
+            continue
+        elif len(values) == 1:
+            #See NOTE:
+            attributes[name] = values[0].string
+        else:
+            # It has multiple values.
+            for value in values:
+                #See NOTE:
+                attributes.setdefault(name, []).append(value.string)
+    return attributes
 
 def _get_user_from_assertion(assertion):
     """
@@ -63,10 +115,13 @@ def _get_user_from_assertion(assertion):
             email,
             saml2sp_settings.SAML2SP_SAML_USER_PASSWORD
         )
-    #NOTE: This next line will fail if the user has changed his password
-    #      via the local account. This actually is a good thing, I think.
+
+    #NOTE: Login will fail if the user has changed his password via the local
+    # account. This actually is a good thing, I think.
     user = authenticate(username=user.username,
                         password=saml2sp_settings.SAML2SP_SAML_USER_PASSWORD)
+    if user is None:
+        raise Exception('Unable to login user "%s" with SAML2SP_SAML_USER_PASSWORD' % email)
     return user
 
 def sso_login(request, selected_idp_url):
@@ -78,19 +133,20 @@ def sso_login(request, selected_idp_url):
     parameters = {
         'ACS_URL': saml2sp_settings.SAML2SP_ACS_URL,
         'DESTINATION': selected_idp_url,
-        'AUTHN_REQUEST_ID': base.get_random_id(),
-        'ISSUE_INSTANT': base.get_time_string(),
+        'AUTHN_REQUEST_ID': common.get_random_id(),
+        'ISSUE_INSTANT': common.get_time_string(),
         'ISSUER': _get_entity_id(request),
     }
-    authn_req = xml_render.get_authnrequest_xml(parameters, signed=False)
-    request = base64.b64encode(authn_req)
+    authn_req = xml_render.get_authnrequest_xml(parameters, 
+                    signed=saml2sp_settings.SAML2SP_SIGNING)
+    saml_request = base64.b64encode(authn_req)
     token = sso_destination
     tv = {
         'request_url': selected_idp_url,
-        'request': request,
+        'saml_request': saml_request,
         'token': token,
     }
-    return render_to_response('saml2sp/sso_post_request.html', tv)
+    return render(request, 'saml2sp/sso_post_request.html', tv)
 
 def sso_idp_select(request):
     """
@@ -106,7 +162,7 @@ def sso_idp_select(request):
     tv = {
         'form': form,
     }
-    return render_to_response('saml2sp/sso_idp_selection.html', tv,
+    return render(request, 'saml2sp/sso_idp_selection.html', tv,
         context_instance=RequestContext(request))
 
 
@@ -120,15 +176,16 @@ def sso_response(request):
     sso_session = request.POST.get('RelayState', None)
     data = request.POST.get('SAMLResponse', None)
     assertion = base64.b64decode(data)
-    #TODO: Expand this next bit to process/translate attributes, too:
     user = _get_user_from_assertion(assertion)
+    attributes = _get_attributes_from_assertion(assertion)
     login(request, user)
     tv = {
         'user': user,
         'assertion': assertion,
+        'attributes': attributes,
         'sso_destination': sso_session,
     }
-    return render_to_response('saml2sp/sso_complete.html', tv)
+    return render(request, 'saml2sp/sso_complete.html', tv)
 
 @login_required
 def sso_test(request):
@@ -139,20 +196,34 @@ def sso_test(request):
     tv = {
         'session': request.session,
     }
-    return render_to_response('saml2sp/sso_test.html', tv)
+    return render(request, 'saml2sp/sso_test.html', tv)
 
-#@login_required
+#@login_required # doesn't make sense otherwise, does it? YAGNI?
 def sso_single_logout(request):
     """
     Replies with an XHTML SSO Request.
     """
-    #TODO: Create valid SLO Assertion and pass it to the template.
+    #TODO: Fill these in properly (somewhere else?).
+    subject = request.user.email #FTM
+    parameters = {
+        'DESTINATION': saml2sp_settings.SAML2SP_IDP_SLO_URL,
+        'LOGOUT_REQUEST_ID': common.get_random_id(),
+        'ISSUE_INSTANT': common.get_time_string(),
+        'ISSUER': _get_entity_id(request),
+        'SUBJECT_FORMAT': 'urn:oasis:names:tc:SAML:2.0:nameid-format:email',
+        'SP_NAME_QUALIFIER': saml2sp_settings.SAML2SP_IDP_SLO_URL, #???
+        'SUBJECT': subject,
+    }
+    logout_req = xml_render.get_logoutrequest_xml(parameters,                                  
+                    signed=saml2sp_settings.SAML2SP_SIGNING)
+    saml_request = base64.b64encode(logout_req)    
     logout(request)
     tv = {
+        'saml_request': saml_request,
         'idp_logout_url': saml2sp_settings.SAML2SP_IDP_SLO_URL,
         'autosubmit': saml2sp_settings.SAML2SP_IDP_AUTO_LOGOUT,
     }
-    return render_to_response('saml2sp/sso_single_logout.html', tv)
+    return render(request, 'saml2sp/sso_single_logout.html', tv)
 
 def descriptor(request):
     """

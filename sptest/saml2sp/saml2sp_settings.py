@@ -33,6 +33,11 @@ try:
     SAML2SP_SAML_USER_PASSWORD = settings.SAML2SP_SAML_USER_PASSWORD
 except:
     SAML2SP_SAML_USER_PASSWORD = settings.SECRET_KEY[::-1]
+    
+try:
+    SAML2SP_SIGNING = settings.SAML2SP_SIGNING
+except:
+    SAML2SP_SIGNING = False
 
 # If using relative paths, be careful!
 try:

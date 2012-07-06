@@ -6,8 +6,16 @@
 Click Continue to sign in at the Identity Provider.
 </div>
 <form method="POST" action="{{ request_url }}">
-   <input type="hidden" name="SAMLRequest" value="{{ request }}" />
-   <input type="hidden" name="RelayState" value="{{ token }}" />
-   <input type="submit" value="Continue" />
- </form>
+    <input type="hidden" name="SAMLRequest" value="{{ saml_request }}" />
+    <input type="hidden" name="RelayState" value="{{ token }}" />
+    <input type="submit" value="Continue" />
+</form>
+{% if autosubmit %}
+<script language="javascript">
+<!--
+/* Automatically submit the form. */
+document.forms[0].submit();
+//-->
+</script>
+{% endif %} 
 {% endblock content %}
