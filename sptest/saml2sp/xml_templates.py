@@ -68,6 +68,6 @@ LOGOUT_REQUEST = (
             '<saml:NameID Format="${SUBJECT_FORMAT}" SPNameQualifier="${SP_NAME_QUALIFIER}">'
             '${SUBJECT}'
             '</saml:NameID>'
-            '${LOGOUT_REQUEST_SIGNATURE}'
+            '${LOGOUT_REQUEST_SIGNATURE}' # simpleSAMLphp logout request isn't signed!
     '</samlp:LogoutRequest>'
 )

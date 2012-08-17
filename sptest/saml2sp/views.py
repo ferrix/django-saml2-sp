@@ -214,8 +214,15 @@ def sso_single_logout(request):
         'SP_NAME_QUALIFIER': saml2sp_settings.SAML2SP_IDP_SLO_URL, #???
         'SUBJECT': subject,
     }
+    #STARTHERE: Some thoughts:
+    #1. simpleSAMLphp LogoutRequest isn't signed (going from SP to IDP).
+    #2. this logout_req gets b64encoded as saml_request, but SAMLTracer chokes on it. Why?
+    #3. The template needs to supply a RelayState ID value (which is used later?).
+    #4. simpleSAMLphp (IdP) returns a SAMLResponse. What is it checking?
+    #5. the browser POSTs the return message to the SP at another view, which...
+    #   ...does what? Check the RelayState ID from step #3, perhaps?
     logout_req = xml_render.get_logoutrequest_xml(parameters,                                  
-                    signed=saml2sp_settings.SAML2SP_SIGNING)
+                    signed=False) #saml2sp_settings.SAML2SP_SIGNING)
     saml_request = base64.b64encode(logout_req)    
     #logout(request) #TURN OFF WHILE DEBUGGING!
     tv = {
